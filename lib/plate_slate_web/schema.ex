@@ -1,19 +1,38 @@
-#---
+# ---
 # Excerpted from "Craft GraphQL APIs in Elixir with Absinthe",
 # published by The Pragmatic Bookshelf.
 # Copyrights apply to this code. It may not be used to create training material,
 # courses, books, articles, and the like. Contact us if you are in doubt.
 # We make no guarantees that this code is fit for any purpose.
 # Visit http://www.pragmaticprogrammer.com/titles/wwgraphql for more book information.
-#---
+# ---
 defmodule PlateSlateWeb.Schema do
   use Absinthe.Schema
 
+  alias PlateSlate.{Menu, Repo}
+
   query do
-    # <<Ignore this for now>>
+    @desc "The list of available items on the menu"
+    field :menu_items, list_of(:menu_item) do
+      resolve(fn _, _, _ ->
+        {:ok, Repo.all(Menu.Item)}
+      end)
+    end
   end
 
+  @desc "single menu item object"
   object :menu_item do
-    # <<We'll add fields soon>>
+    @desc "id of menu item"
+    field(:id, :id)
+
+    @desc "name of item"
+    field(:name, :string)
+
+    @desc "description of item"
+    field(:description, :string)
+
+    @desc "price of item"
+    field(:price, :float)
+
   end
 end
