@@ -1,11 +1,11 @@
-#---
+# ---
 # Excerpted from "Craft GraphQL APIs in Elixir with Absinthe",
 # published by The Pragmatic Bookshelf.
 # Copyrights apply to this code. It may not be used to create training material,
 # courses, books, articles, and the like. Contact us if you are in doubt.
 # We make no guarantees that this code is fit for any purpose.
 # Visit http://www.pragmaticprogrammer.com/titles/wwgraphql for more book information.
-#---
+# ---
 defmodule PlateSlate.Menu do
   @moduledoc """
   The Menu context.
@@ -16,6 +16,12 @@ defmodule PlateSlate.Menu do
 
   alias PlateSlate.Menu.Category
 
+  defp filter_category(query, filter) do
+    Enum.reduce(filter, query, fn {:name, name}, query ->
+      from(q in query, where: ilike(q.name, ^"%#{name}%"))
+    end)
+  end
+
   @doc """
   Returns the list of categories.
 
@@ -25,8 +31,16 @@ defmodule PlateSlate.Menu do
       [%Category{}, ...]
 
   """
-  def list_categories do
-    Repo.all(Category)
+  def list_categories(args) do
+    args
+    |> Enum.reduce(Category, fn
+      {:order, order}, query ->
+        query |> order_by({^order, :name})
+
+      {:filter, filter}, query ->
+        query |> filter_category(filter)
+    end)
+    |> Repo.all()
   end
 
   @doc """
@@ -110,20 +124,70 @@ defmodule PlateSlate.Menu do
     Category.changeset(category, %{})
   end
 
+  ########
+  # ITEM #
+  ########
+
   alias PlateSlate.Menu.Item
 
-  @doc """
-  Returns the list of items.
+  defp filter_with(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:name, name}, query ->
+        from(q in query, where: ilike(q.name, ^"%#{name}%"))
 
-  ## Examples
+      {:priced_above, price}, query ->
+        from(q in query, where: q.price >= ^price)
 
-      iex> list_items()
-      [%Item{}, ...]
+      {:priced_below, price}, query ->
+        from(q in query, where: q.price <= ^price)
 
-  """
-  def list_items do
-    Repo.all(Item)
+      {:added_after, date}, query ->
+        from(q in query, where: q.added_on >= ^date)
+
+      {:added_before, date}, query ->
+        from(q in query, where: q.added_on <= ^date)
+
+      {:category, category_name}, query ->
+        from(
+          q in query,
+          join: c in assoc(q, :category),
+          where: ilike(c.name, ^"%#{category_name}%")
+        )
+
+      {:tag, tag_name}, query ->
+        from(
+          q in query,
+          join: t in assoc(q, :tags),
+          where: ilike(t.name, ^"%#{tag_name}%")
+        )
+    end)
   end
+
+  def list_items(args) do
+    # IO.puts "These are our arguments: #{inspect(args)}"
+    args
+    |> Enum.reduce(Item, fn
+      {:order, order}, query ->
+        query |> order_by({^order, :name})
+
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.all()
+  end
+
+  # @doc """
+  # Returns the list of items.
+
+  # ## Examples
+
+  #     iex> list_items()
+  #     [%Item{}, ...]
+
+  # """
+  # def list_items(_) do
+  #   Repo.all(Item)
+  # end
 
   @doc """
   Gets a single item.
