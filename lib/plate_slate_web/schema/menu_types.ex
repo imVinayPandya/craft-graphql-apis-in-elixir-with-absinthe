@@ -24,10 +24,10 @@ defmodule PlateSlateWeb.Schema.MenuTypes do
     field(:tag, :string)
 
     @desc "Priced above a value"
-    field(:priced_above, :float)
+    field(:priced_above, :decimal)
 
     @desc "Priced below a value"
-    field(:priced_below, :float)
+    field(:priced_below, :decimal)
 
     @desc "Added to the menu before this date"
     field(:added_before, :date)
@@ -49,7 +49,7 @@ defmodule PlateSlateWeb.Schema.MenuTypes do
     field(:description, :string)
 
     @desc "price of item"
-    field(:price, :float)
+    field(:price, :decimal)
 
     @desc "item added on this date"
     field(:added_on, :date)
@@ -60,6 +60,7 @@ defmodule PlateSlateWeb.Schema.MenuTypes do
     interfaces([:search_result])
     field(:name, :string)
     field(:description, :string)
+
     field :items, list_of(:menu_item) do
       resolve(&Resolvers.Menu.items_for_category/3)
     end
@@ -78,5 +79,23 @@ defmodule PlateSlateWeb.Schema.MenuTypes do
       _, _ ->
         nil
     end)
+  end
+
+  input_object(:menu_item_input) do
+    field(:name, non_null(:string))
+    field(:description, :string)
+    field(:price, non_null(:decimal))
+    field(:category_id, non_null(:id))
+  end
+
+  input_object(:menu_item_update_input) do
+    field(:name, non_null(:string))
+    field(:description, :string)
+    field(:price, :decimal)
+  end
+
+  object :menu_item_result do
+    field(:menu_item, :menu_item)
+    field(:errors, list_of(:input_error))
   end
 end
